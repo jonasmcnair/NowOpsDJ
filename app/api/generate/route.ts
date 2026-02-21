@@ -217,8 +217,23 @@ export async function POST(request: NextRequest) {
 
     combined = combined.slice(0, 20);
 
-    // Tag gems and sort by BPM for natural DJ flow
-    const finalTracks = combined
+  // Limit to max 2 tracks per artist
+    const artistCount = new Map<string, number>();
+    const diversified = combined.filter((t: any) => {
+      const artistName = t.artists[0].name;
+      const count = artistCount.get(artistName) || 0;
+      if (count >= 2) return false;
+      artistCount.set(artistName, count + 1);
+      return true;
+    });
+
+    // Pad back to 20 if filtering removed too many
+    const usedIds = new Set(diversified.map((t: any) => t.id));
+    const extras = enriched.filter((t: any) => !usedIds.has(t.id));
+    const padded = [...diversified, ...extras].slice(0, 20);
+
+    // Tag gems and sort by BPM for natural DJ set flow
+    const finalTracks = padded
       .map((t: any) => ({ ...t, isHiddenGem: t.popularity < 40 }))
       .sort((a: any, b: any) => (a.tempo ?? 0) - (b.tempo ?? 0));
 
