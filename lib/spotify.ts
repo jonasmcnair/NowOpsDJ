@@ -41,4 +41,60 @@ export function formatBPM(tempo: number): string {
   return Math.round(tempo).toString();
 }
 
-export async function exch
+export async function exchangeCodeForTokens(code: string): Promise<{
+  access_token: string;
+  refresh_token: string;
+  expires_in: number;
+}> {
+  const clientId = process.env.SPOTIFY_CLIENT_ID!;
+  const clientSecret = process.env.SPOTIFY_CLIENT_SECRET!;
+  const redirectUri = `${process.env.NEXTAUTH_URL}/api/callback`;
+  const params = new URLSearchParams({
+    grant_type: 'authorization_code',
+    code,
+    redirect_uri: redirectUri,
+  });
+  const response = await fetch('https://accounts.spotify.com/api/token', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      Authorization: `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString('base64')}`,
+    },
+    body: params,
+  });
+  if (!response.ok) {
+    const err = await response.text();
+    throw new Error(`Token exchange failed: ${err}`);
+  }
+  return response.json();
+}
+
+export async function refreshAccessToken(refreshToken: string): Promise<{
+  access_token: string;
+  expires_in: number;
+}> {
+  const clientId = process.env.SPOTIFY_CLIENT_ID!;
+  const clientSecret = process.env.SPOTIFY_CLIENT_SECRET!;
+  const params = new URLSearchParams({
+    grant_type: 'refresh_token',
+    refresh_token: refreshToken,
+  });
+  const response = await fetch('https://accounts.spotify.com/api/token', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      Authorization: `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString('base64')}`,
+    },
+    body: params,
+  });
+  if (!response.ok) throw new Error('Token refresh failed');
+  return response.json();
+}
+
+export async function searchTracks(query: string, accessToken: string, limit = 20): Promise<SpotifyTrack[]> {
+  const url = `${SPOTIFY_BASE}/search?q=${encodeURIComponent(query)}&type=track&limit=${limit}`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
+  if (!res.ok) throw new Error('Search failed');
+  const data = await res.json();
+  return data.tracks.items;
+}
