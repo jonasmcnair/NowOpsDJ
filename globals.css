@@ -1,0 +1,81 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=DM+Mono:wght@400;500&display=swap');
+
+:root {
+  --font-sans: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'DM Mono', ui-monospace, monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background-color: #F9F8F6;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: #F9F8F6;
+  color: #323232;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Subtle paper texture overlay */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #F9F8F6; }
+::-webkit-scrollbar-thumb { background: #D4CBC0; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #8B6F5C; }
+
+/* Track row animation stagger */
+.track-row {
+  animation: slideUp 0.35s ease both;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* BPM/Key tags */
+.tag {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: #F0EBE4;
+  color: #8B6F5C;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+/* Input focus glow */
+.search-input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px #C4A882, 0 4px 16px rgba(139,111,92,0.12);
+}
+
+/* Spinner */
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner { animation: spin 0.8s linear infinite; }
+
+/* Hidden gem badge pulse */
+@keyframes gemPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+.gem-badge { animation: gemPulse 2.5s ease-in-out infinite; }
