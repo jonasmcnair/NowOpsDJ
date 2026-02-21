@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
     // Get audio features
     const ids = allTracks.map((t: any) => t.id).slice(0, 100);
     const features = await getAudioFeatures(ids, accessToken);
-    const featureMap = new Map(features.map((f: any) => [f.id, f]));
+    const featureMap = new Map<string, any>(features.map((f: any) => [f.id, f]));
 
     // Merge features
     let enriched = allTracks.map((t: any) => ({
