@@ -98,3 +98,128 @@ export async function searchTracks(query: string, accessToken: string, limit = 2
   const data = await res.json();
   return data.tracks.items;
 }
+export async function getRecommendations(
+  seedTrackIds: string[],
+  accessToken: string,
+  targetEnergy = 0.8,
+  targetDanceability = 0.75,
+  limit = 20
+): Promise<SpotifyTrack[]> {
+  const params = new URLSearchParams({
+    seed_tracks: seedTrackIds.slice(0, 5).join(','),
+    target_energy: targetEnergy.toString(),
+    target_danceability: targetDanceability.toString(),
+    min_energy: '0.5',
+    min_danceability: '0.5',
+    limit: limit.toString(),
+  });
+  const res = await fetch(`${SPOTIFY_BASE}/recommendations?${params}`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!res.ok) throw new Error('Recommendations failed');
+  const data = await res.json();
+  return data.tracks;
+}
+
+export async function getRecommendationsByGenre(
+  genre: string,
+  accessToken: string,
+  limit = 20
+): Promise<SpotifyTrack[]> {
+  const params = new URLSearchParams({
+    seed_genres: genre,
+    target_energy: '0.8',
+    target_danceability: '0.8',
+    min_energy: '0.5',
+    limit: limit.toString(),
+  });
+  const res = await fetch(`${SPOTIFY_BASE}/recommendations?${params}`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!res.ok) throw new Error('Genre recommendations failed');
+  const data = await res.json();
+  return data.tracks;
+}
+
+export async function getAudioFeatures(trackIds: string[], accessToken: string): Promise<AudioFeatures[]> {
+  if (!trackIds.length) return [];
+  const res = await fetch(`${SPOTIFY_BASE}/audio-features?ids=${trackIds.join(',')}`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!res.ok) return [];
+  const data = await res.json();
+  return (data.audio_features || []).filter(Boolean);
+}
+
+export function mergeAudioFeatures(tracks: SpotifyTrack[], features: AudioFeatures[]): SpotifyTrack[] {
+  const featureMap = new Map(features.map((f) => [f.id, f]));
+  return tracks.map((track) => {
+    const f = featureMap.get(track.id);
+    if (!f) return track;
+    return { ...track, tempo: f.tempo, energy: f.energy, danceability: f.danceability, key: f.key, mode: f.mode };
+  });
+}
+
+export async function getCurrentUser(accessToken: string): Promise<{ id: string; display_name: string }> {
+  const res = await fetch(`${SPOTIFY_BASE}/me`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!res.ok) throw new Error('Failed to get user');
+  return res.json();
+}
+
+export async function createPlaylistAndAddTracks(
+  userId: string,
+  name: string,
+  trackUris: string[],
+  accessToken: string,
+  description = 'Created by DJ Set Architect'
+): Promise<{ id: string; external_urls: { spotify: string } }> {
+  const createRes = await fetch(`${SPOTIFY_BASE}/users/${userId}/playlists`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ name, description, public: false }),
+  });
+  if (!createRes.ok) throw new Error('Failed to create playlist');
+  const playlist = await createRes.json();
+  await fetch(`${SPOTIFY_BASE}/playlists/${playlist.id}/tracks`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ uris: trackUris }),
+  });
+  return playlist;
+}
+
+export function vibeToGenre(vibe: string): string {
+  const lower = vibe.toLowerCase();
+  if (lower.includes('house')) return 'house';
+  if (lower.includes('techno')) return 'techno';
+  if (lower.includes('drum') || lower.includes('dnb') || lower.includes('bass')) return 'drum-and-bass';
+  if (lower.includes('hip') || lower.includes('hop') || lower.includes('rap')) return 'hip-hop';
+  if (lower.includes('r&b') || lower.includes('rnb') || lower.includes('soul')) return 'r-n-b';
+  if (lower.includes('afro')) return 'afrobeats';
+  if (lower.includes('latin') || lower.includes('reggaeton')) return 'latin';
+  if (lower.includes('disco') || lower.includes('funk')) return 'disco';
+  if (lower.includes('jazz')) return 'jazz';
+  if (lower.includes('trance')) return 'trance';
+  if (lower.includes('ambient') || lower.includes('chill')) return 'ambient';
+  if (lower.includes('pop')) return 'pop';
+  if (lower.includes('rock')) return 'rock';
+  if (lower.includes('indie')) return 'indie';
+  if (lower.includes('electronic') || lower.includes('edm')) return 'electronic';
+  return 'dance';
+}
+
+export function isBPMQuery(input: string): boolean {
+  return /^\d{2,3}(\s*bpm)?$/i.test(input.trim());
+}
+
+export function parseBPM(input: string): number {
+  return parseInt(input.replace(/bpm/i, '').trim(), 10);
+}
