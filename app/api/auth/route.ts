@@ -24,7 +24,7 @@ export async function GET() {
     scope: SCOPES,
     redirect_uri: redirectUri,
     state,
-    show_dialog: 'false',
+    show_dialog: 'true',
   });
 
   return NextResponse.redirect(`https://accounts.spotify.com/authorize?${params}`);
