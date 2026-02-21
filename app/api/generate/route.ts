@@ -64,9 +64,9 @@ export async function POST(request: NextRequest) {
       // BPM-based: search dance/electronic and filter by tempo
       const bpm = parseBPM(query);
       const searches = await Promise.all([
-        searchTracks('dance music', accessToken, 50),
-        searchTracks('electronic music', accessToken, 50),
-        searchTracks('house music', accessToken, 50),
+        searchTracks('dance music', accessToken, 20),
+        searchTracks('electronic music', accessToken, 20),
+        searchTracks('house music', accessToken, 20),
       ]);
       allTracks = searches.flat();
     } else {
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
       const queries = vibeToQueries(query);
       const searches = await Promise.all([
         searchTracks(query, accessToken, 50),
-        ...queries.slice(0, 2).map(q => searchTracks(q, accessToken, 30)),
+        ...queries.slice(0, 2).map(q => searchTracks(q, accessToken, 20)),
       ]);
       allTracks = searches.flat();
     }
