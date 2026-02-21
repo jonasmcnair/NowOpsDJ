@@ -1,8 +1,4 @@
-// app/api/callback/route.ts
-// Handles Spotify OAuth2 callback, exchanges code for tokens
-
 import { NextRequest, NextResponse } from 'next/server';
-import { exchangeCodeForTokens, getCurrentUser } from '@/lib/spotify';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -16,12 +12,48 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const tokens = await exchangeCodeForTokens(code);
-    const user = await getCurrentUser(tokens.access_token);
+    const clientId = process.env.SPOTIFY_CLIENT_ID;
+    const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
+    const nextAuthUrl = process.env.NEXTAUTH_URL;
 
-    // Redirect back to app with tokens in URL params (simple approach)
-    // In production, use httpOnly cookies or a server-side session store
-    const redirectUrl = new URL('/', process.env.NEXTAUTH_URL!);
+    if (!clientId || !clientSecret || !nextAuthUrl) {
+      return new NextResponse(`Missing env vars: CLIENT_ID=${!!clientId} SECRET=${!!clientSecret} URL=${!!nextAuthUrl}`, { status: 500 });
+    }
+
+    const redirectUri = `${nextAuthUrl}/api/callback`;
+    const params = new URLSearchParams({
+      grant_type: 'authorization_code',
+      code,
+      redirect_uri: redirectUri,
+    });
+
+    const tokenRes = await fetch('https://accounts.spotify.com/api/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        Authorization: `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString('base64')}`,
+      },
+      body: params,
+    });
+
+    if (!tokenRes.ok) {
+      const errText = await tokenRes.text();
+      return new NextResponse(`Token exchange failed: ${errText}`, { status: 500 });
+    }
+
+    const tokens = await tokenRes.json();
+
+    const userRes = await fetch('https://api.spotify.com/v1/me', {
+      headers: { Authorization: `Bearer ${tokens.access_token}` },
+    });
+
+    if (!userRes.ok) {
+      return new NextResponse('Failed to get user profile', { status: 500 });
+    }
+
+    const user = await userRes.json();
+
+    const redirectUrl = new URL('/', nextAuthUrl);
     redirectUrl.searchParams.set('access_token', tokens.access_token);
     redirectUrl.searchParams.set('refresh_token', tokens.refresh_token);
     redirectUrl.searchParams.set('expires_at', String(Date.now() + tokens.expires_in * 1000));
@@ -30,9 +62,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.redirect(redirectUrl);
   } catch (e) {
-    console.error('OAuth callback error:', e);
-    const redirectUrl = new URL('/', process.env.NEXTAUTH_URL!);
-    redirectUrl.searchParams.set('auth_error', 'token_exchange_failed');
-    return NextResponse.redirect(redirectUrl);
+    const msg = e instanceof Error ? e.message : 'Unknown error';
+    return new NextResponse(`Callback error: ${msg}`, { status: 500 });
   }
 }
