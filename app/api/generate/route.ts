@@ -141,7 +141,7 @@ export async function POST(request: NextRequest) {
         // Step 6: Get more tracks from same artist
         const sameArtistTracks = await getArtistTopTracks(seedArtistId, accessToken);
 
-        // Combine: seed track first, then related artists, then genre searches
+      // Combine: seed track first, then related artists, then genre searches
         allTracks = dedup([
           seedTrack,
           ...relatedTracks,
@@ -149,6 +149,15 @@ export async function POST(request: NextRequest) {
           ...genreSearches.flat(),
           ...seedResults.slice(1),
         ]);
+
+        // Also deduplicate by track name + artist to catch re-releases and remasters
+        const nameSeen = new Set<string>();
+        allTracks = allTracks.filter((t: any) => {
+          const key = `${t.name.toLowerCase()}__${t.artists[0].name.toLowerCase()}`;
+          if (nameSeen.has(key)) return false;
+          nameSeen.add(key);
+          return true;
+        });
 
       } else {
         // Fallback: vibe-based search
