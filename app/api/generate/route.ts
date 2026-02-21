@@ -2,13 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const SPOTIFY_BASE = 'https://api.spotify.com/v1';
 
-async function searchTracks(query: string, accessToken: string, limit = 20) {
-  const url = `${SPOTIFY_BASE}/search?q=${encodeURIComponent(query)}&type=track&limit=${limit}`;
+async function searchTracks(query: string, accessToken: string) {
+  const url = `${SPOTIFY_BASE}/search?q=${encodeURIComponent(query)}&type=track&limit=10`;
   const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
-if (!res.ok) {
-        const errText = await res.text();
-        throw new Error(`Search failed: ${res.status} ${errText}`);
-      }  const data = await res.json();
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`Search failed: ${res.status} ${errText}`);
+  }
+  const data = await res.json();
   return data.tracks.items;
 }
 
@@ -26,13 +27,15 @@ const VIBE_QUERIES: Record<string, string[]> = {
   house: ['house music 2024', 'deep house', 'tech house'],
   techno: ['techno 2024', 'industrial techno', 'minimal techno'],
   afrobeats: ['afrobeats 2024', 'afro pop', 'afro fusion'],
-  'hip-hop': ['hip hop 2024', 'rap 2024', 'trap music'],
+  hip: ['hip hop 2024', 'rap 2024', 'trap music'],
   disco: ['disco classics', 'nu disco', 'funk disco'],
   dance: ['dance music 2024', 'edm 2024', 'dance pop'],
   electronic: ['electronic music 2024', 'synth pop', 'electro'],
   latin: ['reggaeton 2024', 'latin pop', 'latin dance'],
   trance: ['trance music', 'progressive trance', 'uplifting trance'],
   ambient: ['ambient music', 'chillout', 'downtempo'],
+  funk: ['funk music', 'nu funk', 'disco funk'],
+  jazz: ['jazz 2024', 'nu jazz', 'jazz fusion'],
 };
 
 function vibeToQueries(input: string): string[] {
@@ -40,7 +43,7 @@ function vibeToQueries(input: string): string[] {
   for (const [key, queries] of Object.entries(VIBE_QUERIES)) {
     if (lower.includes(key)) return queries;
   }
-  return [input, `${input} mix`, `best ${input}`];
+  return [input, `${input} mix`, `best ${input} tracks`];
 }
 
 function isBPMQuery(input: string): boolean {
@@ -61,27 +64,25 @@ export async function POST(request: NextRequest) {
     let allTracks: any[] = [];
 
     if (isBPMQuery(query)) {
-      // BPM-based: search dance/electronic and filter by tempo
-      const bpm = parseBPM(query);
       const searches = await Promise.all([
-        searchTracks('dance music', accessToken, 20),
-        searchTracks('electronic music', accessToken, 20),
-        searchTracks('house music', accessToken, 20),
+        searchTracks('dance music', accessToken),
+        searchTracks('electronic music', accessToken),
+        searchTracks('house music', accessToken),
       ]);
       allTracks = searches.flat();
     } else {
-      // Song or vibe: search multiple queries
       const queries = vibeToQueries(query);
       const searches = await Promise.all([
-        searchTracks(query, accessToken, 50),
-        ...queries.slice(0, 2).map(q => searchTracks(q, accessToken, 20)),
+        searchTracks(query, accessToken),
+        searchTracks(queries[0], accessToken),
+        searchTracks(queries[1], accessToken),
       ]);
       allTracks = searches.flat();
     }
 
     // Deduplicate
     const seen = new Set<string>();
-    allTracks = allTracks.filter(t => {
+    allTracks = allTracks.filter((t: any) => {
       if (!t?.id || seen.has(t.id)) return false;
       seen.add(t.id);
       return true;
@@ -93,7 +94,7 @@ export async function POST(request: NextRequest) {
     const featureMap = new Map<string, any>(features.map((f: any) => [f.id, f]));
 
     // Merge features
-    let enriched = allTracks.map((t: any) => ({
+    let enriched: any[] = allTracks.map((t: any) => ({
       ...t,
       tempo: featureMap.get(t.id)?.tempo,
       energy: featureMap.get(t.id)?.energy,
@@ -112,14 +113,16 @@ export async function POST(request: NextRequest) {
       const bpm = parseBPM(query);
       enriched = enriched.filter((t: any) => {
         if (!t.tempo) return false;
-        return [t.tempo, t.tempo * 2, t.tempo / 2].some(c => Math.abs(c - bpm) <= 15);
+        return [t.tempo, t.tempo * 2, t.tempo / 2].some((c: number) => Math.abs(c - bpm) <= 15);
       });
     }
 
     // Split popular vs hidden gems
-    const popular = enriched.filter((t: any) => t.popularity >= 40)
+    const popular = enriched
+      .filter((t: any) => t.popularity >= 40)
       .sort((a: any, b: any) => b.popularity - a.popularity);
-    const gems = enriched.filter((t: any) => t.popularity < 40)
+    const gems = enriched
+      .filter((t: any) => t.popularity < 40)
       .sort(() => Math.random() - 0.5);
 
     let combined = [...popular.slice(0, 14), ...gems.slice(0, 6)];
