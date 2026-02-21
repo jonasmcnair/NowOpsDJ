@@ -5,8 +5,10 @@ const SPOTIFY_BASE = 'https://api.spotify.com/v1';
 async function searchTracks(query: string, accessToken: string, limit = 20) {
   const url = `${SPOTIFY_BASE}/search?q=${encodeURIComponent(query)}&type=track&limit=${limit}`;
   const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
-  if (!res.ok) throw new Error('Search failed');
-  const data = await res.json();
+if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(`Search failed: ${res.status} ${errText}`);
+      }  const data = await res.json();
   return data.tracks.items;
 }
 
