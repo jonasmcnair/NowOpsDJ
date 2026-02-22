@@ -369,8 +369,15 @@ export default function HomePage() {
                       <span style={{ fontSize: 13, fontWeight: 500, color: isActive ? 'var(--red)' : 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {track.name}
                       </span>
-                      {!hasPreview && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-dim)', border: '1px solid var(--border)', padding: '1px 4px', borderRadius: 2 }}>NO PREVIEW</span>}
-                    </div>
+{!hasPreview && (
+                      <a href={track.external_urls?.spotify} target="_blank" rel="noopener noreferrer"
+                        onClick={e => e.stopPropagation()}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--text-dim)', border: '1px solid var(--border)', padding: '1px 6px', borderRadius: 2, textDecoration: 'none', cursor: 'pointer' }}
+                        onMouseEnter={e => (e.currentTarget.style.color = 'var(--green)')}
+                        onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-dim)')}>
+                        <ExternalLink size={8} />OPEN
+                      </a>
+                    )}                    </div>
                     {track.badge && track.badge !== 'Discovered' && <BadgeChip badge={track.badge} />}
                   </div>
 
