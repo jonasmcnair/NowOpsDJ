@@ -360,21 +360,31 @@ export async function POST(request: NextRequest) {
       combined = [...combined, ...enriched.filter((t: any) => !usedIds.has(t.id))].slice(0, 20);
     }
 
-    // ── Max 1 track per artist ────────────────────────────────────────────────
+// ── Max 1 track per artist, but relax if not enough tracks ───────────────
     const artistSeen = new Map<string, number>();
+    const maxPerArtist = enriched.length < 30 ? 3 : combined.length < 15 ? 2 : 1;
     let diversified = combined.filter((t: any) => {
       const a = t.artists[0]?.name;
       const n = artistSeen.get(a) || 0;
-      if (n >= 1) return false;
+      if (n >= maxPerArtist) return false;
       artistSeen.set(a, n + 1);
       return true;
     });
 
-    // Pad back to 20 with unique artists
-    if (diversified.length < 20) {
+    // Pad back to 20, relaxing artist constraint each pass if needed
+    for (const limit of [2, 3, 99]) {
+      if (diversified.length >= 20) break;
       const usedIds = new Set(diversified.map((t: any) => t.id));
-      const usedArtists = new Set(diversified.map((t: any) => t.artists[0]?.name));
-      const extras = enriched.filter((t: any) => !usedIds.has(t.id) && !usedArtists.has(t.artists[0]?.name));
+      const artistCount2 = new Map<string, number>();
+      diversified.forEach((t: any) => {
+        const a = t.artists[0]?.name;
+        artistCount2.set(a, (artistCount2.get(a) || 0) + 1);
+      });
+      const extras = enriched.filter((t: any) => {
+        if (usedIds.has(t.id)) return false;
+        const a = t.artists[0]?.name;
+        return (artistCount2.get(a) || 0) < limit;
+      });
       diversified = [...diversified, ...extras].slice(0, 20);
     }
 
