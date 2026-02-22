@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rhythm Machine</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0a0a0f;--bg2:#111118;--bg3:#1a1a24;
+  --border:#2a2a3a;--text:#e8e8f0;--text2:#6b6b8a;
+  --accent:#7c3aed;--accent2:#a855f7;--accent3:#06b6d4;
+  --wobble:#f97316;--wobble2:#fb923c;
+  --green:#10b981;--red:#ef4444;
+}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:20px;gap:20px;font-size:13px}
+
+/* ── DRUM MACHINE ── */
+.drum-machine{background:var(--bg2);border:1px solid var(--border);border-radius:16px;width:100%;max-width:900px;padding:28px;box-shadow:0 0 40px rgba(124,58,237,.15)}
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
+.logo{font-size:22px;font-weight:300;letter-spacing:-.02em}
+.subtitle{font-size:11px;letter-spacing:.1em;color:var(--text2);text-transform:uppercase;margin-top:2px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--border);transition:.3s}
+.dot.on{background:var(--green);box-shadow:0 0 8px var(--green)}
+
+.ai-row{display:flex;gap:8px;margin-bottom:10px}
+.inp{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-family:inherit;font-size:13px;outline:none;transition:.2s}
+.inp:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(124,58,237,.15)}
+.inp::placeholder{color:var(--text2)}
+
+.btn{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:9px 14px;color:var(--text);font-family:inherit;font-size:12px;font-weight:500;cursor:pointer;transition:.2s;white-space:nowrap;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{background:var(--border)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary:hover{background:var(--accent2);border-color:var(--accent2)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.danger{border-color:var(--red);color:var(--red)}
+.btn.danger:hover{background:rgba(239,68,68,.1)}
+
+.ideas{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:18px}
+.idea-label{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;margin-right:4px}
+.idea-btn{padding:5px 10px;font-size:11px}
+
+.divider{height:1px;background:var(--border);margin-bottom:20px}
+
+.transport{display:flex;align-items:center;gap:20px;margin-bottom:24px;flex-wrap:wrap}
+.tempo-wrap{display:flex;align-items:center;gap:10px}
+.tempo-lbl{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.06em}
+input[type=range]{-webkit-appearance:none;height:4px;background:var(--border);border-radius:2px;outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;background:var(--accent2);border-radius:50%;cursor:pointer;border:2px solid var(--bg);box-shadow:0 0 6px var(--accent)}
+.tempo-val{font-family:monospace;font-size:12px;min-width:60px;text-align:right;color:var(--text)}
+
+.sequencer{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:20px}
+.track{display:grid;grid-template-columns:72px repeat(16,1fr);gap:3px;align-items:center;margin-bottom:6px}
+.track:last-child{margin-bottom:0}
+.track-lbl{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--text2);padding-right:10px}
+.step{aspect-ratio:1;background:var(--bg2);border:1px solid var(--border);border-radius:5px;cursor:pointer;transition:.12s}
+.step:hover{border-color:var(--accent2);transform:translateY(-1px)}
+.step.active{background:var(--accent);border-color:var(--accent2)}
+.step.playing{box-shadow:0 0 0 2px var(--accent2);transform:scale(1.1)}
+.step.active.playing{background:var(--accent2)}
+
+.presets{display:flex;gap:8px;flex-wrap:wrap}
+
+/* ── DUBSTEP BASSLINE MODULE ── */
+.bass-module{background:var(--bg2);border:1px solid var(--border);border-radius:16px;width:100%;max-width:900px;padding:28px;box-shadow:0 0 60px rgba(168,85,247,.2),0 0 120px rgba(6,182,212,.05)}
+.bass-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
+.bass-title{font-size:20px;font-weight:300;letter-spacing:-.02em}
+.bass-title span{color:var(--accent2)}
+.wobble-indicator{display:flex;align-items:center;gap:8px}
+.wob-bar{width:4px;height:20px;background:var(--border);border-radius:2px;transition:.1s}
+.wob-bar.on{background:var(--wobble2)}
+
+/* Pattern select row */
+.pattern-row{display:flex;gap:8px;align-items:center;margin-bottom:20px;flex-wrap:wrap}
+.pattern-lbl{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;margin-right:4px}
+.pat-btn{padding:6px 12px;font-size:11px;border-radius:8px}
+.pat-btn.selected{background:var(--accent);border-color:var(--accent2);color:#fff}
+
+/* Bassline scroll strip */
+.bass-strip-wrap{overflow-x:auto;margin-bottom:24px;padding-bottom:4px}
+.bass-strip-wrap::-webkit-scrollbar{height:4px}
+.bass-strip-wrap::-webkit-scrollbar-track{background:var(--bg3);border-radius:2px}
+.bass-strip-wrap::-webkit-scrollbar-thumb{background:var(--accent);border-radius:2px}
+.bass-strip{display:flex;gap:6px;min-width:max-content;background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:16px}
+.bass-step{display:flex;flex-direction:column;align-items:center;gap:6px;width:52px}
+.bass-step-num{font-size:9px;color:var(--text2);letter-spacing:.05em}
+.bass-note-btn{width:100%;padding:6px 0;font-size:11px;font-weight:500;border-radius:6px;text-align:center;background:var(--bg2);border:1px solid var(--border);cursor:pointer;transition:.15s;color:var(--text2)}
+.bass-note-btn:hover{border-color:var(--accent);color:var(--accent2)}
+.bass-note-btn.on{background:var(--accent);border-color:var(--accent2);color:#fff;box-shadow:0 0 10px rgba(124,58,237,.4)}
+.bass-note-btn.playing{box-shadow:0 0 0 2px var(--wobble),0 0 12px var(--wobble);transform:scale(1.05)}
+.bass-note-btn.on.playing{background:var(--wobble);border-color:var(--wobble2)}
+.bass-oct-btn{padding:3px 6px;font-size:9px;border-radius:4px;background:var(--bg2);border:1px solid var(--border);cursor:pointer;color:var(--text2);transition:.15s}
+.bass-oct-btn:hover{border-color:var(--accent3);color:var(--accent3)}
+.bass-oct-btn.active{background:var(--accent3);border-color:var(--accent3);color:#fff;font-weight:600}
+
+/* Notes selector popup */
+.note-picker{position:absolute;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:10px;display:none;z-index:100;box-shadow:0 8px 32px rgba(0,0,0,.5);grid-template-columns:repeat(4,1fr);gap:4px;width:180px}
+.note-picker.show{display:grid}
+.np-btn{padding:5px 4px;font-size:11px;border-radius:5px;background:var(--bg2);border:1px solid var(--border);cursor:pointer;color:var(--text);transition:.15s;text-align:center}
+.np-btn:hover{background:var(--accent);border-color:var(--accent2);color:#fff}
+.np-btn.selected{background:var(--accent2);border-color:var(--accent2);color:#fff}
+
+/* Knobs section */
+.knobs-section{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:16px;margin-bottom:24px}
+.knob-card{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:16px;display:flex;flex-direction:column;align-items:center;gap:10px}
+.knob-title{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--text2)}
+.knob-wrap{position:relative;width:70px;height:70px;cursor:pointer;user-select:none}
+.knob-svg{width:70px;height:70px}
+.knob-val{font-size:11px;font-family:monospace;color:var(--text2);text-align:center}
+.knob-val span{color:var(--text);font-size:13px}
+
+/* Filter display */
+.filter-display{background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:24px}
+.filter-lbl{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--text2);margin-bottom:10px}
+canvas.filter-viz{width:100%;height:80px;display:block;border-radius:8px;background:var(--bg)}
+
+/* Bass transport */
+.bass-transport{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.bass-status{font-size:11px;color:var(--text2);margin-left:auto}
+.bass-status span{color:var(--accent2)}
+
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 16px;font-size:12px;color:var(--text);display:none;animation:slideUp .3s ease;box-shadow:0 4px 20px rgba(0,0,0,.4);z-index:999}
+.toast.show{display:block}
+.toast.err{border-color:var(--red);color:var(--red)}
+.toast.ok{border-color:var(--green);color:var(--green)}
+@keyframes slideUp{from{opacity:0;transform:translate(-50%,16px)}to{opacity:1;transform:translate(-50%,0)}}
+</style>
+</head>
+<body>
+
+<!-- DRUM MACHINE -->
+<div class="drum-machine">
+  <div class="header">
+    <div><div class="logo">RHYTHM MACHINE</div><div class="subtitle">AI-POWERED · MODEL 002</div></div>
+    <div class="dot" id="drumDot"></div>
+  </div>
+  <div class="ai-row">
+    <input class="inp" id="beatInput" placeholder="Describe your beat (e.g. 'minimal techno', 'trap drums', 'vintage funk')" autocomplete="off"/>
+    <button class="btn primary" id="generateBtn">Generate</button>
+  </div>
+  <div class="ideas">
+    <span class="idea-label">Try:</span>
+    <button class="btn idea-btn" data-idea="808 cowbell rhythm">808 Cowbell</button>
+    <button class="btn idea-btn" data-idea="experimental glitch drums">Glitch</button>
+    <button class="btn idea-btn" data-idea="jazz fusion groove">Jazz Fusion</button>
+    <button class="btn idea-btn" data-idea="afrobeat percussion">Afrobeat</button>
+    <button class="btn idea-btn" data-idea="lo-fi hip hop beat">Lo-Fi</button>
+    <button class="btn idea-btn" data-idea="stadium rock drums">Stadium Rock</button>
+  </div>
+  <div class="divider"></div>
+  <div class="transport">
+    <div style="display:flex;gap:8px">
+      <button class="btn" id="playBtn">▶ Play</button>
+      <button class="btn" id="stopBtn">■ Stop</button>
+      <button class="btn danger" id="clearBtn">✕ Clear</button>
+    </div>
+    <div class="tempo-wrap">
+      <span class="tempo-lbl">Tempo</span>
+      <input type="range" id="tempoSlider" min="60" max="180" value="140" style="width:110px"/>
+      <span class="tempo-val" id="tempoVal">140 BPM</span>
+    </div>
+  </div>
+  <div class="sequencer" id="sequencer">
+    <div class="track" data-inst="kick"><div class="track-lbl">Kick</div></div>
+    <div class="track" data-inst="snare"><div class="track-lbl">Snare</div></div>
+    <div class="track" data-inst="hihat"><div class="track-lbl">HiHat</div></div>
+    <div class="track" data-inst="openhat"><div class="track-lbl">OpenHat</div></div>
+    <div class="track" data-inst="clap"><div class="track-lbl">Clap</div></div>
+  </div>
+  <div class="presets">
+    <button class="btn pat-btn" data-preset="techno">Techno</button>
+    <button class="btn pat-btn" data-preset="house">House</button>
+    <button class="btn pat-btn" data-preset="trap">Trap</button>
+    <button class="btn pat-btn" data-preset="breakbeat">Breakbeat</button>
+    <button class="btn pat-btn" data-preset="minimal">Minimal</button>
+  </div>
+</div>
+
+<!-- DUBSTEP BASSLINE MODULE -->
+<div class="bass-module">
+  <div class="bass-header">
+    <div>
+      <div class="bass-title">DUBSTEP <span>BASSLINE</span></div>
+      <div class="subtitle">WOBBLE GENERATOR · FILTER SYNTH</div>
+    </div>
+    <div class="wobble-indicator" id="wobInd">
+      <div class="wob-bar"></div><div class="wob-bar"></div><div class="wob-bar"></div>
+      <div class="wob-bar"></div><div class="wob-bar"></div><div class="wob-bar"></div>
+    </div>
+  </div>
+
+  <!-- Pattern presets -->
+  <div class="pattern-row">
+    <span class="pattern-lbl">Pattern:</span>
+    <button class="btn pat-btn selected" data-bpat="half-time">Half-Time</button>
+    <button class="btn pat-btn" data-bpat="neuro">Neuro</button>
+    <button class="btn pat-btn" data-bpat="brostep">Brostep</button>
+    <button class="btn pat-btn" data-bpat="liquid">Liquid</button>
+    <button class="btn pat-btn" data-bpat="drumstep">Drumstep</button>
+    <button class="btn pat-btn" data-bpat="riddim">Riddim</button>
+    <button class="btn pat-btn" data-bpat="deep">Deep</button>
+  </div>
+
+  <!-- Filter visualization -->
+  <div class="filter-display">
+    <div class="filter-lbl">Filter Response</div>
+    <canvas class="filter-viz" id="filterViz" height="80"></canvas>
+  </div>
+
+  <!-- Knobs -->
+  <div class="knobs-section">
+    <div class="knob-card">
+      <div class="knob-title">Wobble Rate</div>
+      <div class="knob-wrap" data-knob="wobbleRate" data-min="0.5" data-max="8" data-val="2" data-decimals="1">
+        <svg class="knob-svg" viewBox="0 0 70 70"><circle cx="35" cy="35" r="28" fill="none" stroke="#2a2a3a" stroke-width="6"/><path class="knob-arc" d="" fill="none" stroke="#a855f7" stroke-width="6" stroke-linecap="round"/><circle cx="35" cy="35" r="16" fill="#1a1a24"/><line class="knob-needle" x1="35" y1="35" x2="35" y2="13" stroke="#e8e8f0" stroke-width="2.5" stroke-linecap="round"/></svg>
+      </div>
+      <div class="knob-val"><span id="kv-wobbleRate">2.0</span> Hz</div>
+    </div>
+    <div class="knob-card">
+      <div class="knob-title">Cutoff Freq</div>
+      <div class="knob-wrap" data-knob="cutoff" data-min="80" data-max="4000" data-val="800" data-decimals="0">
+        <svg class="knob-svg" viewBox="0 0 70 70"><circle cx="35" cy="35" r="28" fill="none" stroke="#2a2a3a" stroke-width="6"/><path class="knob-arc" d="" fill="none" stroke="#06b6d4" stroke-width="6" stroke-linecap="round"/><circle cx="35" cy="35" r="16" fill="#1a1a24"/><line class="knob-needle" x1="35" y1="35" x2="35" y2="13" stroke="#e8e8f0" stroke-width="2.5" stroke-linecap="round"/></svg>
+      </div>
+      <div class="knob-val"><span id="kv-cutoff">800</span> Hz</div>
+    </div>
+    <div class="knob-card">
+      <div class="knob-title">Resonance</div>
+      <div class="knob-wrap" data-knob="resonance" data-min="0" data-max="25" data-val="10" data-decimals="1">
+        <svg class="knob-svg" viewBox="0 0 70 70"><circle cx="35" cy="35" r="28" fill="none" stroke="#2a2a3a" stroke-width="6"/><path class="knob-arc" d="" fill="none" stroke="#f97316" stroke-width="6" stroke-linecap="round"/><circle cx="35" cy="35" r="16" fill="#1a1a24"/><line class="knob-needle" x1="35" y1="35" x2="35" y2="13" stroke="#e8e8f0" stroke-width="2.5" stroke-linecap="round"/></svg>
+      </div>
+      <div class="knob-val"><span id="kv-resonance">10.0</span> Q</div>
+    </div>
+    <div class="knob-card">
+      <div class="knob-title">Wobble Depth</div>
+      <div class="knob-wrap" data-knob="wobbleDepth" data-min="0" data-max="1" data-val="0.7" data-decimals="2">
+        <svg class="knob-svg" viewBox="0 0 70 70"><circle cx="35" cy="35" r="28" fill="none" stroke="#2a2a3a" stroke-width="6"/><path class="knob-arc" d="" fill="none" stroke="#a855f7" stroke-width="6" stroke-linecap="round"/><circle cx="35" cy="35" r="16" fill="#1a1a24"/><line class="knob-needle" x1="35" y1="35" x2="35" y2="13" stroke="#e8e8f0" stroke-width="2.5" stroke-linecap="round"/></svg>
+      </div>
+      <div class="knob-val"><span id="kv-wobbleDepth">0.70</span></div>
+    </div>
+    <div class="knob-card">
+      <div class="knob-title">Drive</div>
+      <div class="knob-wrap" data-knob="drive" data-min="1" data-max="50" data-val="8" data-decimals="1">
+        <svg class="knob-svg" viewBox="0 0 70 70"><circle cx="35" cy="35" r="28" fill="none" stroke="#2a2a3a" stroke-width="6"/><path class="knob-arc" d="" fill="none" stroke="#f97316" stroke-width="6" stroke-linecap="round"/><circle cx="35" cy="35" r="16" fill="#1a1a24"/><line class="knob-needle" x1="35" y1="35" x2="35" y2="13" stroke="#e8e8f0" stroke-width="2.5" stroke-linecap="round"/></svg>
+      </div>
+      <div class="knob-val"><span id="kv-drive">8.0</span> x</div>
+    </div>
+    <div class="knob-card">
+      <div class="knob-title">Bass Vol</div>
+      <div class="knob-wrap" data-knob="bassVol" data-min="0" data-max="1" data-val="0.6" data-decimals="2">
+        <svg class="knob-svg" viewBox="0 0 70 70"><circle cx="35" cy="35" r="28" fill="none" stroke="#2a2a3a" stroke-width="6"/><path class="knob-arc" d="" fill="none" stroke="#10b981" stroke-width="6" stroke-linecap="round"/><circle cx="35" cy="35" r="16" fill="#1a1a24"/><line class="knob-needle" x1="35" y1="35" x2="35" y2="13" stroke="#e8e8f0" stroke-width="2.5" stroke-linecap="round"/></svg>
+      </div>
+      <div class="knob-val"><span id="kv-bassVol">0.60</span></div>
+    </div>
+  </div>
+
+  <!-- Scrolling bassline strip -->
+  <div class="bass-strip-wrap">
+    <div class="bass-strip" id="bassStrip"></div>
+  </div>
+
+  <!-- Note picker popup -->
+  <div class="note-picker" id="notePicker"></div>
+
+  <!-- Bass transport -->
+  <div class="bass-transport">
+    <button class="btn primary" id="bassPlayBtn">▶ Play Bass</button>
+    <button class="btn" id="bassStopBtn">■ Stop</button>
+    <button class="btn" id="bassRandBtn">⟳ Randomize</button>
+    <span class="bass-status">Step: <span id="bassStepLbl">–</span></span>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ════════════════════════════════════════════════════════
+//  DRUM MACHINE
+// ════════════════════════════════════════════════════════
+const STEPS = 16;
+const INSTS = ['kick','snare','hihat','openhat','clap'];
+const drumPresets = {
+  techno:    {kick:[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],snare:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],hihat:[0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0],openhat:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],clap:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0]},
+  house:     {kick:[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],snare:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],hihat:[0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0],openhat:[0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1],clap:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0]},
+  trap:      {kick:[1,0,0,0,0,0,0,1,0,0,1,0,0,0,0,0],snare:[0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],hihat:[1,0,1,0,1,0,1,0,1,1,0,1,0,1,1,1],openhat:[0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0],clap:[0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0]},
+  breakbeat: {kick:[1,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0],snare:[0,0,0,0,1,0,0,0,0,1,0,0,1,0,0,0],hihat:[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],openhat:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0],clap:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]},
+  minimal:   {kick:[1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0],snare:[0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],hihat:[0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1],openhat:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],clap:[0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0]}
+};
+
+let drumPattern={}, drumPlaying=false, drumStep=0, drumTimer=null, drumAC=null;
+INSTS.forEach(i=>drumPattern[i]=new Array(STEPS).fill(0));
+
+function buildDrumGrid(){
+  const seq=document.getElementById('sequencer');
+  INSTS.forEach(inst=>{
+    const track=seq.querySelector(`[data-inst="${inst}"]`);
+    for(let s=0;s<STEPS;s++){
+      const el=document.createElement('div');
+      el.className='step';
+      el.dataset.inst=inst;el.dataset.s=s;
+      el.onclick=()=>{drumPattern[inst][s]^=1;el.classList.toggle('active')};
+      track.appendChild(el);
+    }
+  });
+}
+
+function refreshDrum(){
+  INSTS.forEach(inst=>drumPattern[inst].forEach((v,s)=>{
+    const el=document.querySelector(`.step[data-inst="${inst}"][data-s="${s}"]`);
+    if(el){v?el.classList.add('active'):el.classList.remove('active');}
+  }));
+}
+
+function drumTick(){
+  document.querySelectorAll('.step').forEach(e=>e.classList.remove('playing'));
+  INSTS.forEach(inst=>{
+    const el=document.querySelector(`.step[data-inst="${inst}"][data-s="${drumStep}"]`);
+    if(el){el.classList.add('playing');if(drumPattern[inst][drumStep])playDrum(inst);}
+  });
+  drumStep=(drumStep+1)%STEPS;
+}
+
+function playDrum(inst){
+  if(!drumAC)return;const now=drumAC.currentTime;
+  if(inst==='kick'){
+    const o=drumAC.createOscillator(),g=drumAC.createGain();
+    o.connect(g);g.connect(drumAC.destination);
+    o.frequency.setValueAtTime(80,now);o.frequency.exponentialRampToValueAtTime(0.01,now+0.5);
+    g.gain.setValueAtTime(1.2,now);g.gain.exponentialRampToValueAtTime(0.01,now+0.5);
+    o.start(now);o.stop(now+0.5);
+  } else if(inst==='snare'||inst==='clap'){
+    const dur=0.25;
+    const buf=drumAC.createBuffer(1,drumAC.sampleRate*dur,drumAC.sampleRate);
+    const d=buf.getChannelData(0);for(let i=0;i<buf.length;i++)d[i]=Math.random()*2-1;
+    const src=drumAC.createBufferSource(),g=drumAC.createGain();
+    src.buffer=buf;src.connect(g);g.connect(drumAC.destination);
+    g.gain.setValueAtTime(inst==='clap'?0.3:0.4,now);
+    g.gain.exponentialRampToValueAtTime(0.001,now+dur);
+    src.start(now);src.stop(now+dur);
+  } else {
+    const dur=inst==='openhat'?0.35:0.08;
+    const bufLen=Math.floor(drumAC.sampleRate*dur);
+    const buf=drumAC.createBuffer(1,bufLen,drumAC.sampleRate);
+    const d=buf.getChannelData(0);
+    for(let i=0;i<bufLen;i++)d[i]=Math.random()*2-1;
+    const src=drumAC.createBufferSource(),f=drumAC.createBiquadFilter(),g=drumAC.createGain();
+    f.type='highpass';f.frequency.value=8000;
+    src.buffer=buf;src.connect(f);f.connect(g);g.connect(drumAC.destination);
+    g.gain.setValueAtTime(0.15,now);
+    g.gain.exponentialRampToValueAtTime(0.001,now+dur);
+    src.start(now);src.stop(now+dur);
+  }
+}
+
+function drumPlay(){
+  if(!drumAC)drumAC=new(window.AudioContext||window.webkitAudioContext)();
+  if(drumPlaying)return;
+  drumPlaying=true;
+  document.getElementById('drumDot').classList.add('on');
+  document.getElementById('playBtn').textContent='⏸ Pause';
+  const bpm=+document.getElementById('tempoSlider').value;
+  const iv=(60/bpm/4)*1000;
+  drumTick();drumTimer=setInterval(drumTick,iv);
+}
+function drumPause(){
+  drumPlaying=false;clearInterval(drumTimer);
+  document.getElementById('drumDot').classList.remove('on');
+  document.getElementById('playBtn').textContent='▶ Play';
+}
+function drumStop(){drumPause();drumStep=0;document.querySelectorAll('.step').forEach(e=>e.classList.remove('playing'));}
+function drumClear(){INSTS.forEach(i=>drumPattern[i].fill(0));refreshDrum();}
+
+document.getElementById('playBtn').onclick=()=>drumPlaying?drumPause():drumPlay();
+document.getElementById('stopBtn').onclick=drumStop;
+document.getElementById('clearBtn').onclick=drumClear;
+document.getElementById('tempoSlider').oninput=e=>{
+  document.getElementById('tempoVal').textContent=e.target.value+' BPM';
+  if(drumPlaying){drumPause();drumPlay();}
+};
+document.querySelectorAll('[data-preset]').forEach(b=>b.onclick=()=>{
+  const p=drumPresets[b.dataset.preset];
+  if(p){Object.assign(drumPattern,JSON.parse(JSON.stringify(p)));refreshDrum();showToast('Loaded '+b.dataset.preset,'ok');}
+});
+document.querySelectorAll('.idea-btn').forEach(b=>b.onclick=()=>{
+  document.getElementById('beatInput').value=b.dataset.idea;genBeat();
+});
+document.getElementById('beatInput').onkeypress=e=>{if(e.key==='Enter')genBeat();};
+
+async function genBeat(){
+  const input=document.getElementById('beatInput').value;
+  if(!input.trim()){showToast('Please describe a beat','err');return;}
+  const btn=document.getElementById('generateBtn');
+  btn.disabled=true;btn.textContent='Generating…';
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:20,messages:[{role:'user',content:`Classify this drum beat description into ONE of: techno, house, trap, breakbeat, minimal. Reply with ONLY the word. Description: "${input}"`}]})});
+    const data=await res.json();
+    const preset=(data.content[0].text||'').trim().toLowerCase();
+    const p=drumPresets[preset]||drumPresets.techno;
+    Object.assign(drumPattern,JSON.parse(JSON.stringify(p)));
+    refreshDrum();showToast('Generated '+preset+' beat','ok');
+  }catch(e){showToast('Generation failed','err');}
+  btn.disabled=false;btn.textContent='Generate';
+}
+document.getElementById('generateBtn').onclick=genBeat;
+
+// ════════════════════════════════════════════════════════
+//  DUBSTEP BASSLINE
+// ════════════════════════════════════════════════════════
+const NOTES=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const BASS_STEPS=16;
+const NOTE_FREQS={};
+// Build freq table for octaves 1-3
+for(let oct=1;oct<=3;oct++){
+  NOTES.forEach((n,i)=>{
+    const midi=12*(oct+1)+i;
+    NOTE_FREQS[n+oct]=440*Math.pow(2,(midi-69)/12);
+  });
+}
+
+// Dubstep bassline patterns [step: {note, oct, on}]
+const bassPatterns={
+  'half-time': ['C2','–','–','–','C2','–','–','–','A#1','–','–','–','G1','–','C2','–'],
+  'neuro':     ['C2','–','C2','–','–','A#1','–','G1','C2','–','C2','F2','–','–','G#1','–'],
+  'brostep':   ['C2','C2','–','–','C2','–','C2','–','A#1','–','A#1','–','G1','G1','–','C2'],
+  'liquid':    ['C2','–','E2','–','G2','–','E2','–','D2','–','F2','–','E2','–','C2','–'],
+  'drumstep':  ['C2','–','C2','C2','–','C2','–','–','A#1','–','A#1','G1','–','G1','C2','–'],
+  'riddim':    ['C2','–','–','C2','–','–','C2','–','G1','–','–','G1','–','C2','–','–'],
+  'deep':      ['C2','–','–','–','G1','–','–','A#1','C2','–','–','–','F1','–','G1','–'],
+};
+
+let bassSeq=[], bassPlaying=false, bassStep=0, bassTimer=null, bassAC=null;
+let wobbleTimer=null;
+let bassFilter=null, bassGainNode=null, bassWobbleLFO=null, bassWobbleGain=null;
+// Knob values
+const knobs={wobbleRate:2,cutoff:800,resonance:10,wobbleDepth:0.7,drive:8,bassVol:0.6};
+
+function initBassSeq(patName){
+  const raw=bassPatterns[patName]||bassPatterns['half-time'];
+  bassSeq=raw.map((n,i)=>{
+    if(n==='–')return{note:'C',oct:2,on:false};
+    const note=n.slice(0,-1),oct=+n.slice(-1);
+    return{note,oct,on:true};
+  });
+}
+initBassSeq('half-time');
+
+function buildBassStrip(){
+  const strip=document.getElementById('bassStrip');
+  strip.innerHTML='';
+  bassSeq.forEach((s,i)=>{
+    const col=document.createElement('div');col.className='bass-step';col.id='bstep-'+i;
+    col.innerHTML=`<div class="bass-step-num">${String(i+1).padStart(2,'0')}</div>
+      <button class="bass-note-btn${s.on?' on':''}" id="bNote-${i}">${s.on?s.note+s.oct:'–'}</button>
+      <button class="bass-oct-btn${s.oct===1?' active':''}" id="bOct1-${i}">1</button>
+      <button class="bass-oct-btn${s.oct===2?' active':''}" id="bOct2-${i}">2</button>
+      <button class="bass-oct-btn${s.oct===3?' active':''}" id="bOct3-${i}">3</button>`;
+    strip.appendChild(col);
+
+    // Note button → toggle on/off, or open picker when on
+    const noteBtn=col.querySelector('.bass-note-btn');
+    noteBtn.onclick=(e)=>{
+      if(!bassSeq[i].on){bassSeq[i].on=true;noteBtn.classList.add('on');noteBtn.textContent=bassSeq[i].note+bassSeq[i].oct;openPicker(i,noteBtn);}
+      else{openPicker(i,noteBtn);}
+      e.stopPropagation();
+    };
+    // Oct buttons
+    [1,2,3].forEach(o=>{
+      col.querySelector(`#bOct${o}-${i}`).onclick=()=>{
+        bassSeq[i].oct=o;
+        if(bassSeq[i].on)noteBtn.textContent=bassSeq[i].note+o;
+        [1,2,3].forEach(x=>col.querySelector(`#bOct${x}-${i}`).classList.toggle('active',x===o));
+      };
+    });
+  });
+}
+
+// Note picker
+const picker=document.getElementById('notePicker');
+let pickerTarget=-1;
+function openPicker(idx,anchor){
+  pickerTarget=idx;
+  picker.innerHTML='<button class="np-btn" data-n="off" style="color:#ef4444">–</button>'+
+    NOTES.map(n=>`<button class="np-btn${bassSeq[idx].note===n&&bassSeq[idx].on?' selected':''}" data-n="${n}">${n}</button>`).join('');
+  const rect=anchor.getBoundingClientRect();
+  picker.style.top=(rect.bottom+window.scrollY+4)+'px';
+  picker.style.left=(rect.left+window.scrollX)+'px';
+  picker.classList.add('show');
+  picker.querySelectorAll('.np-btn').forEach(b=>b.onclick=e=>{
+    const n=b.dataset.n;
+    if(n==='off'){bassSeq[idx].on=false;document.getElementById('bNote-'+idx).classList.remove('on');document.getElementById('bNote-'+idx).textContent='–';}
+    else{bassSeq[idx].note=n;bassSeq[idx].on=true;const nb=document.getElementById('bNote-'+idx);nb.classList.add('on');nb.textContent=n+bassSeq[idx].oct;}
+    picker.classList.remove('show');e.stopPropagation();
+  });
+}
+document.addEventListener('click',()=>picker.classList.remove('show'));
+
+// Pattern buttons
+document.querySelectorAll('[data-bpat]').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('[data-bpat]').forEach(x=>x.classList.remove('selected'));
+  b.classList.add('selected');
+  initBassSeq(b.dataset.bpat);buildBassStrip();showToast(b.dataset.bpat+' pattern loaded','ok');
+});
+
+// Randomize
+document.getElementById('bassRandBtn').onclick=()=>{
+  const notePool=['C','D#','F','G','A#'];
+  bassSeq=bassSeq.map((_,i)=>{
+    const on=Math.random()>0.35;
+    return{note:notePool[Math.floor(Math.random()*notePool.length)],oct:Math.random()>0.5?2:1,on};
+  });
+  buildBassStrip();showToast('Randomized!','ok');
+};
+
+// ── Audio engine for bass ──
+function initBassAudio(){
+  if(!bassAC)bassAC=new(window.AudioContext||window.webkitAudioContext)();
+  // Cleanup
+  if(bassGainNode)try{bassGainNode.disconnect()}catch(e){}
+  if(bassFilter)try{bassFilter.disconnect()}catch(e){}
+}
+
+function playBassNote(freq,duration){
+  if(!bassAC)return;
+  const now=bassAC.currentTime;
+
+  // Oscillators
+  const osc1=bassAC.createOscillator();
+  const osc2=bassAC.createOscillator();
+  osc1.type='sawtooth';osc2.type='square';
+  osc1.frequency.value=freq;osc2.frequency.value=freq*1.005;
+
+  // Merge
+  const merge=bassAC.createGain();merge.gain.value=0.5;
+  osc1.connect(merge);osc2.connect(merge);
+
+  // Distortion / drive
+  const waveShaper=bassAC.createWaveShaper();
+  const driveAmt=knobs.drive;
+  const curve=new Float32Array(256);
+  for(let i=0;i<256;i++){const x=i*2/256-1;curve[i]=((Math.PI+driveAmt)*x)/(Math.PI+driveAmt*Math.abs(x));}
+  waveShaper.curve=curve;waveShaper.oversample='4x';
+
+  // Filter
+  const filt=bassAC.createBiquadFilter();
+  filt.type='lowpass';
+  filt.Q.value=knobs.resonance;
+
+  // Wobble LFO
+  const lfo=bassAC.createOscillator();
+  const lfoGain=bassAC.createGain();
+  lfo.frequency.value=knobs.wobbleRate;
+  lfo.type='sine';
+  const baseF=knobs.cutoff;
+  const depth=knobs.wobbleDepth;
+  filt.frequency.value=baseF;
+  lfoGain.gain.value=baseF*depth;
+  lfo.connect(lfoGain);lfoGain.connect(filt.frequency);
+
+  // Output gain
+  const outGain=bassAC.createGain();
+  outGain.gain.setValueAtTime(0,now);
+  outGain.gain.linearRampToValueAtTime(knobs.bassVol,now+0.01);
+  outGain.gain.setValueAtTime(knobs.bassVol,now+duration-0.04);
+  outGain.gain.linearRampToValueAtTime(0,now+duration);
+
+  merge.connect(waveShaper);waveShaper.connect(filt);filt.connect(outGain);outGain.connect(bassAC.destination);
+
+  osc1.start(now);osc2.start(now);lfo.start(now);
+  osc1.stop(now+duration);osc2.stop(now+duration);lfo.stop(now+duration);
+}
+
+function bassTick(){
+  // Clear old playing states
+  document.querySelectorAll('.bass-note-btn').forEach(e=>e.classList.remove('playing'));
+  const el=document.getElementById('bNote-'+bassStep);
+  if(el){el.classList.add('playing');
+    if(bassSeq[bassStep].on){
+      const f=NOTE_FREQS[bassSeq[bassStep].note+bassSeq[bassStep].oct]||110;
+      const bpm=+document.getElementById('tempoSlider').value;
+      const dur=(60/bpm/4)*0.9;
+      playBassNote(f,dur);
+    }
+  }
+  document.getElementById('bassStepLbl').textContent=(bassStep+1)+'/'+BASS_STEPS;
+  animateWobble();
+  bassStep=(bassStep+1)%BASS_STEPS;
+}
+
+function bassPlay(){
+  if(!bassAC)bassAC=new(window.AudioContext||window.webkitAudioContext)();
+  if(bassPlaying)return;bassPlaying=true;
+  document.getElementById('bassPlayBtn').textContent='⏸ Playing…';
+  const bpm=+document.getElementById('tempoSlider').value;
+  const iv=(60/bpm/4)*1000;
+  bassTick();bassTimer=setInterval(bassTick,iv);
+}
+function bassStop(){
+  bassPlaying=false;clearInterval(bassTimer);
+  document.getElementById('bassPlayBtn').textContent='▶ Play Bass';
+  document.getElementById('bassStepLbl').textContent='–';
+  document.querySelectorAll('.bass-note-btn').forEach(e=>e.classList.remove('playing'));
+  bassStep=0;
+}
+document.getElementById('bassPlayBtn').onclick=()=>bassPlaying?bassStop():bassPlay();
+document.getElementById('bassStopBtn').onclick=bassStop;
+
+// ── Wobble bars animation ──
+let wobPhase=0;
+function animateWobble(){
+  const bars=document.querySelectorAll('.wob-bar');
+  const depth=knobs.wobbleDepth;
+  bars.forEach((b,i)=>{
+    const v=Math.sin(wobPhase+i*0.8)*depth;
+    b.classList.toggle('on',v>0);
+    b.style.transform=`scaleY(${0.4+Math.abs(v)*1.6})`;
+  });
+  wobPhase+=knobs.wobbleRate*0.3;
+}
+
+// ── Filter Visualization ──
+const filterCanvas=document.getElementById('filterViz');
+const fCtx=filterCanvas.getContext('2d');
+function drawFilter(){
+  const W=filterCanvas.width=filterCanvas.offsetWidth*devicePixelRatio;
+  const H=filterCanvas.height=filterCanvas.offsetHeight*devicePixelRatio;
+  fCtx.clearRect(0,0,W,H);
+
+  const cutoff=knobs.cutoff;const q=knobs.resonance;
+  const freqs=[20,40,80,160,300,500,800,1000,2000,4000,8000,16000,20000];
+
+  fCtx.beginPath();
+  for(let x=0;x<W;x++){
+    const freq=20*Math.pow(1000,x/W);
+    const ratio=freq/cutoff;
+    const logR=Math.log10(ratio);
+    // Simple LP approximation with resonance peak
+    let db;
+    if(freq<=cutoff){db=q>1?q*0.3*Math.exp(-((logR)**2)/0.04):0;}
+    else{db=-40*Math.log10(ratio)*1.2;}
+    db=Math.max(-60,Math.min(20,db));
+    const y=H/2-db*(H/80);
+    x===0?fCtx.moveTo(x,y):fCtx.lineTo(x,y);
+  }
+  const grad=fCtx.createLinearGradient(0,0,W,0);
+  grad.addColorStop(0,'#7c3aed');grad.addColorStop(0.5,'#06b6d4');grad.addColorStop(1,'#f97316');
+  fCtx.strokeStyle=grad;fCtx.lineWidth=2*devicePixelRatio;fCtx.stroke();
+
+  // Cutoff marker
+  const cx=Math.log10(cutoff/20)/Math.log10(1000)*W;
+  fCtx.beginPath();fCtx.moveTo(cx,0);fCtx.lineTo(cx,H);
+  fCtx.strokeStyle='rgba(168,85,247,0.3)';fCtx.lineWidth=devicePixelRatio;fCtx.stroke();
+}
+drawFilter();
+window.addEventListener('resize',drawFilter);
+
+// ════════════════════════════════════════════════════════
+//  KNOB SYSTEM
+// ════════════════════════════════════════════════════════
+const START_ANGLE=-135*(Math.PI/180);
+const END_ANGLE=135*(Math.PI/180);
+const RANGE=270*(Math.PI/180);
+
+function valToAngle(val,min,max){return START_ANGLE+(val-min)/(max-min)*RANGE;}
+function updateKnobSVG(wrap,val){
+  const min=+wrap.dataset.min,max=+wrap.dataset.max;
+  const angle=valToAngle(val,min,max);
+  const cx=35,cy=35,r=28;
+  // Arc
+  const arcPath=describeArc(cx,cy,r,START_ANGLE,angle);
+  wrap.querySelector('.knob-arc').setAttribute('d',arcPath);
+  // Needle
+  const nx=cx+22*Math.sin(angle),ny=cy-22*Math.cos(angle);
+  const line=wrap.querySelector('.knob-needle');
+  line.setAttribute('x2',nx);line.setAttribute('y2',ny);
+}
+function describeArc(cx,cy,r,startA,endA){
+  const x1=cx+r*Math.sin(startA),y1=cy-r*Math.cos(startA);
+  const x2=cx+r*Math.sin(endA),y2=cy-r*Math.cos(endA);
+  const large=endA-startA>Math.PI?1:0;
+  if(Math.abs(endA-startA)<0.001)return'';
+  return`M${x1.toFixed(2)} ${y1.toFixed(2)} A${r} ${r} 0 ${large} 1 ${x2.toFixed(2)} ${y2.toFixed(2)}`;
+}
+
+function initKnobs(){
+  document.querySelectorAll('.knob-wrap').forEach(wrap=>{
+    const id=wrap.dataset.knob;
+    const min=+wrap.dataset.min,max=+wrap.dataset.max;
+    const decimals=+wrap.dataset.decimals;
+    let val=knobs[id];
+    updateKnobSVG(wrap,val);
+
+    let dragging=false,startY=0,startVal=0;
+    wrap.addEventListener('mousedown',e=>{dragging=true;startY=e.clientY;startVal=val;e.preventDefault();});
+    window.addEventListener('mousemove',e=>{
+      if(!dragging)return;
+      const dy=(startY-e.clientY)/(200);
+      val=Math.max(min,Math.min(max,startVal+dy*(max-min)));
+      knobs[id]=val;
+      updateKnobSVG(wrap,val);
+      document.getElementById('kv-'+id).textContent=val.toFixed(decimals);
+      onKnobChange(id,val);
+    });
+    window.addEventListener('mouseup',()=>dragging=false);
+    // Touch
+    wrap.addEventListener('touchstart',e=>{dragging=true;startY=e.touches[0].clientY;startVal=val;e.preventDefault();},{passive:false});
+    window.addEventListener('touchmove',e=>{
+      if(!dragging)return;
+      const dy=(startY-e.touches[0].clientY)/200;
+      val=Math.max(min,Math.min(max,startVal+dy*(max-min)));
+      knobs[id]=val;
+      updateKnobSVG(wrap,val);
+      document.getElementById('kv-'+id).textContent=val.toFixed(decimals);
+      onKnobChange(id,val);
+    });
+    window.addEventListener('touchend',()=>dragging=false);
+  });
+}
+
+function onKnobChange(id){
+  drawFilter();
+  // No restart — live params are read per-note in bassTick()
+}
+
+// ════════════════════════════════════════════════════════
+//  SYNC: drum tempo change also restarts bass
+// ════════════════════════════════════════════════════════
+const origTempoInput=document.getElementById('tempoSlider').oninput;
+document.getElementById('tempoSlider').oninput=e=>{
+  const bpm=+e.target.value;
+  document.getElementById('tempoVal').textContent=bpm+' BPM';
+  const iv=(60/bpm/4)*1000;
+  if(drumPlaying){clearInterval(drumTimer);drumTimer=setInterval(drumTick,iv);}
+  if(bassPlaying){clearInterval(bassTimer);bassTimer=setInterval(bassTick,iv);}
+};
+
+// ── Toast ──
+function showToast(msg,type=''){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className='toast show '+(type||'');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+// ── Init ──
+buildDrumGrid();
+buildBassStrip();
+initKnobs();
+</script>
+</body>
+</html>
