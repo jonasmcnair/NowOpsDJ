@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const SPOTIFY_BASE = 'https://api.spotify.com/v1';
 
-// ── Camelot Wheel ─────────────────────────────────────────────────────────────
 const CAMELOT: Record<string, string> = {
   '0_1': '8B', '1_1': '3B', '2_1': '10B', '3_1': '5B', '4_1': '12B', '5_1': '7B',
   '6_1': '2B', '7_1': '9B', '8_1': '4B', '9_1': '11B', '10_1': '6B', '11_1': '1B',
@@ -33,7 +32,6 @@ function camelotMatch(sk: number, sm: number, tk: number, tm: number): 'perfect'
   return 'none';
 }
 
-// ── API Helpers ───────────────────────────────────────────────────────────────
 async function searchTracks(query: string, accessToken: string, limit = 10) {
   const url = `${SPOTIFY_BASE}/search?q=${encodeURIComponent(query)}&type=track&limit=${limit}`;
   const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
@@ -55,9 +53,7 @@ async function getPlaylistTracks(playlistId: string, accessToken: string, limit 
   const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
   if (!res.ok) return [];
   const data = await res.json();
-  return (data.items || [])
-    .map((item: any) => item.track)
-    .filter((t: any) => t?.id);
+  return (data.items || []).map((i: any) => i.track).filter((t: any) => t?.id);
 }
 
 async function getAudioFeatures(trackIds: string[], accessToken: string) {
@@ -83,8 +79,7 @@ async function getRelatedArtists(artistId: string, accessToken: string) {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
   if (!res.ok) return [];
-  const data = await res.json();
-  return data.artists || [];
+  return (await res.json()).artists || [];
 }
 
 async function getArtistTopTracks(artistId: string, accessToken: string) {
@@ -92,11 +87,9 @@ async function getArtistTopTracks(artistId: string, accessToken: string) {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
   if (!res.ok) return [];
-  const data = await res.json();
-  return data.tracks || [];
+  return (await res.json()).tracks || [];
 }
 
-// ── Utilities ─────────────────────────────────────────────────────────────────
 function isBPMQuery(input: string): boolean {
   return /^\d{2,3}(\s*bpm)?$/i.test(input.trim());
 }
@@ -118,14 +111,6 @@ function dedup(tracks: any[]): any[] {
   });
 }
 
-// DJ-style playlist keywords — used to filter playlists that are likely DJ sets
-const DJ_KEYWORDS = ['mix', 'dj', 'set', 'club', 'party', 'dance', 'session', 'playlist', 'vibes', 'night', 'bbq', 'cookout', 'summer', 'festival', 'warm up', 'essential'];
-
-function isDJPlaylist(name: string): boolean {
-  const lower = name.toLowerCase();
-  return DJ_KEYWORDS.some(k => lower.includes(k));
-}
-
 function calculateMatchScore(
   track: any,
   seed: { tempo?: number; energy?: number; key?: number; mode?: number }
@@ -143,8 +128,8 @@ function calculateMatchScore(
     const pct = Math.abs(seed.tempo - track.tempo) / seed.tempo;
     const half = Math.abs(seed.tempo - track.tempo * 2) / seed.tempo;
     const dbl = Math.abs(seed.tempo - track.tempo / 2) / seed.tempo;
-    if (Math.min(pct, half, dbl) <= 0.03) score += 30;
-    else if (Math.min(pct, half, dbl) <= 0.08) score += 15;
+    if (Math.min(pct, half, dbl) <= 0.05) score += 30;
+    else if (Math.min(pct, half, dbl) <= 0.1) score += 15;
   }
 
   if (seed.energy !== undefined && track.energy !== undefined) {
@@ -162,31 +147,27 @@ function calculateMatchScore(
   return { score, badge };
 }
 
-// ── Vibe → playlist search queries ───────────────────────────────────────────
 function vibeToPlaylistQueries(input: string): string[] {
   const lower = input.toLowerCase();
-  // Return 3 playlist search queries that will find real DJ curated playlists
-  const base = [
-    `${input} playlist`,
-    `${input} mix`,
-    `${input} party`,
-  ];
-  if (lower.includes('hip hop') || lower.includes('hip-hop') || lower.includes('rap')) {
-    return [`${input} playlist`, 'hip hop party mix', 'hip hop bbq cookout playlist'];
-  }
-  if (lower.includes('bbq') || lower.includes('cookout') || lower.includes('backyard')) {
+  if (lower.includes('bbq') || lower.includes('cookout') || lower.includes('backyard'))
     return [`${input}`, 'backyard bbq party playlist', 'cookout hip hop r&b mix'];
-  }
-  if (lower.includes('house')) return [`${input}`, 'deep house dj mix', 'house music club session'];
-  if (lower.includes('techno')) return [`${input}`, 'techno dj set', 'techno club night mix'];
-  if (lower.includes('r&b') || lower.includes('rnb')) return [`${input}`, 'r&b vibes playlist', 'r&b slow jams mix'];
-  if (lower.includes('afro')) return [`${input}`, 'afrobeats party mix', 'afrobeats dj set'];
-  if (lower.includes('latin') || lower.includes('reggaeton')) return [`${input}`, 'reggaeton mix', 'latin party playlist'];
-  if (lower.includes('disco') || lower.includes('funk')) return [`${input}`, 'disco funk party', 'funky dance mix'];
-  return base;
+  if (lower.includes('hip hop') || lower.includes('rap'))
+    return [`${input} playlist`, 'hip hop party mix', 'hip hop classics playlist'];
+  if (lower.includes('house'))
+    return [`${input}`, 'deep house dj mix', 'house music club session'];
+  if (lower.includes('techno'))
+    return [`${input}`, 'techno dj set', 'techno club night mix'];
+  if (lower.includes('r&b') || lower.includes('rnb'))
+    return [`${input}`, 'r&b vibes playlist', 'r&b slow jams mix'];
+  if (lower.includes('afro'))
+    return [`${input}`, 'afrobeats party mix', 'afrobeats dj set'];
+  if (lower.includes('latin') || lower.includes('reggaeton'))
+    return [`${input}`, 'reggaeton mix', 'latin party playlist'];
+  if (lower.includes('disco') || lower.includes('funk'))
+    return [`${input}`, 'disco funk party', 'funky dance mix'];
+  return [`${input} playlist`, `${input} mix`, `best ${input}`];
 }
 
-// ── Main Route ────────────────────────────────────────────────────────────────
 export async function POST(request: NextRequest) {
   try {
     const { query, accessToken } = await request.json();
@@ -198,113 +179,94 @@ export async function POST(request: NextRequest) {
     let seedFeatures: { tempo?: number; energy?: number; key?: number; mode?: number } = {};
 
     if (isBPMQuery(query)) {
-      // ── BPM mode ────────────────────────────────────────────────────────────
       const bpm = parseBPM(query);
       seedFeatures = { tempo: bpm };
-
-      // Search playlists for BPM-specific DJ sets
       const playlists = await searchPlaylists(`${bpm} bpm dj mix`, accessToken, 8);
-      const djPlaylists = playlists.filter((p: any) => p?.id);
-
-      const playlistTrackSets = await Promise.all(
-        djPlaylists.slice(0, 4).map((p: any) => getPlaylistTracks(p.id, accessToken, 20))
+      const playlistTracks = await Promise.all(
+        playlists.slice(0, 5).map((p: any) => getPlaylistTracks(p.id, accessToken, 25))
       );
       const fallback = await Promise.all([
         searchTracks('dance music', accessToken),
-        searchTracks('electronic music', accessToken),
+        searchTracks('electronic dance', accessToken),
       ]);
-
-      allTracks = dedup([...playlistTrackSets.flat(), ...fallback.flat()]);
+      allTracks = dedup([...playlistTracks.flat(), ...fallback.flat()]);
 
     } else {
-      // ── Song or vibe mode ────────────────────────────────────────────────────
+      // Try to find a matching song first
       const songResults = await searchTracks(query, accessToken, 5);
       const seedTrack = songResults[0];
-      const isVibeQuery = !seedTrack || seedTrack.name.toLowerCase() !== query.toLowerCase().trim();
 
-      if (seedTrack && !isVibeQuery) {
-        // ── SONG MODE: find playlists that contain this exact song ─────────────
-        const seedArtistId = seedTrack.artists[0].id;
-        const seedArtistName = seedTrack.artists[0].name;
+      // Determine if this is a real song match or a vibe query
+      const queryWords = query.toLowerCase().trim().split(' ');
+      const titleMatch = seedTrack &&
+        queryWords.some((w: string) => seedTrack.name.toLowerCase().includes(w));
 
-        // Get seed audio features
+      if (seedTrack && titleMatch) {
+        // ── SONG MODE ──────────────────────────────────────────────────────────
+        const artistId = seedTrack.artists[0].id;
+        const artistName = seedTrack.artists[0].name;
+
+        // Get audio features for seed
         const seedAF = await getAudioFeatures([seedTrack.id], accessToken);
         if (seedAF[0]) {
-          seedFeatures = {
-            tempo: seedAF[0].tempo,
-            energy: seedAF[0].energy,
-            key: seedAF[0].key,
-            mode: seedAF[0].mode,
-          };
+          seedFeatures = { tempo: seedAF[0].tempo, energy: seedAF[0].energy, key: seedAF[0].key, mode: seedAF[0].mode };
         }
 
-        // Search for DJ playlists featuring this song/artist
-        const [playlistSearch1, playlistSearch2, playlistSearch3] = await Promise.all([
-          searchPlaylists(`${seedTrack.name} ${seedArtistName}`, accessToken, 10),
-          searchPlaylists(`${seedArtistName} mix`, accessToken, 10),
-          searchPlaylists(`${seedTrack.name} dj mix`, accessToken, 8),
+        // Search playlists broadly — cast a wide net
+        const [pl1, pl2, pl3, pl4] = await Promise.all([
+          searchPlaylists(`${artistName}`, accessToken, 10),
+          searchPlaylists(`${seedTrack.name} ${artistName}`, accessToken, 10),
+          searchPlaylists(`${artistName} mix`, accessToken, 8),
+          searchPlaylists(`${artistName} party`, accessToken, 8),
         ]);
 
-        // Prioritise playlists that look like DJ sets, sorted by follower count proxy (order in results)
-        const allPlaylists = [...playlistSearch1, ...playlistSearch2, ...playlistSearch3]
-          .filter((p: any) => p?.id)
-          .filter((p: any, i: number, arr: any[]) => arr.findIndex((x: any) => x.id === p.id) === i); // dedup playlists
+        const allPlaylists = dedup([...pl1, ...pl2, ...pl3, ...pl4].filter((p: any) => p?.id));
 
-        const djPlaylists = allPlaylists.filter((p: any) => isDJPlaylist(p.name));
-        const otherPlaylists = allPlaylists.filter((p: any) => !isDJPlaylist(p.name));
-        const prioritised = [...djPlaylists, ...otherPlaylists].slice(0, 6);
-
-        // Pull tracks from those playlists
-        const playlistTrackSets = await Promise.all(
-          prioritised.map((p: any) => getPlaylistTracks(p.id, accessToken, 25))
+        // Pull tracks from top 8 playlists
+        const playlistTracks = await Promise.all(
+          allPlaylists.slice(0, 8).map((p: any) => getPlaylistTracks(p.id, accessToken, 25))
         );
 
-        // Also get related artist tracks as backup
-        const seedArtist = await getArtist(seedArtistId, accessToken);
-        const relatedArtists = await getRelatedArtists(seedArtistId, accessToken);
-        const top4Related = relatedArtists.slice(0, 4);
-        const relatedTopTracks = await Promise.all(
-          top4Related.map((a: any) => getArtistTopTracks(a.id, accessToken))
+        // Related artists as strong backup
+        const [seedArtist, relatedArtists] = await Promise.all([
+          getArtist(artistId, accessToken),
+          getRelatedArtists(artistId, accessToken),
+        ]);
+
+        const top6Related = relatedArtists.slice(0, 6);
+        const relatedTracks = await Promise.all(
+          top6Related.map((a: any) => getArtistTopTracks(a.id, accessToken))
         );
 
-        // Genre search backup
+        // Genre search
         const genres: string[] = seedArtist?.genres || [];
-        const genreTracks = genres[0]
-          ? await searchTracks(genres[0], accessToken)
-          : [];
+        const genreSearches = await Promise.all(
+          genres.slice(0, 2).map((g: string) => searchTracks(g, accessToken, 10))
+        );
+
+        // Same artist tracks
+        const sameArtistTracks = await getArtistTopTracks(artistId, accessToken);
 
         allTracks = dedup([
           seedTrack,
-          ...playlistTrackSets.flat(),
-          ...relatedTopTracks.flat(),
-          ...genreTracks,
+          ...playlistTracks.flat(),
+          ...relatedTracks.flat(),
+          ...sameArtistTracks,
+          ...genreSearches.flat(),
         ]);
 
       } else {
-        // ── VIBE MODE: search popular playlists matching the vibe ─────────────
+        // ── VIBE MODE ──────────────────────────────────────────────────────────
         const vibeQueries = vibeToPlaylistQueries(query);
-
         const [pl1, pl2, pl3] = await Promise.all(
           vibeQueries.map(q => searchPlaylists(q, accessToken, 10))
         );
-
-        const allPlaylists = [...pl1, ...pl2, ...pl3]
-          .filter((p: any) => p?.id)
-          .filter((p: any, i: number, arr: any[]) => arr.findIndex((x: any) => x.id === p.id) === i);
-
-        // Sort: DJ playlists first, then by position (Spotify returns by relevance/popularity)
-        const djPlaylists = allPlaylists.filter((p: any) => isDJPlaylist(p.name));
-        const otherPlaylists = allPlaylists.filter((p: any) => !isDJPlaylist(p.name));
-        const prioritised = [...djPlaylists, ...otherPlaylists].slice(0, 6);
-
-        const playlistTrackSets = await Promise.all(
-          prioritised.map((p: any) => getPlaylistTracks(p.id, accessToken, 25))
+        const allPlaylists = dedup([...pl1, ...pl2, ...pl3].filter((p: any) => p?.id));
+        const playlistTracks = await Promise.all(
+          allPlaylists.slice(0, 8).map((p: any) => getPlaylistTracks(p.id, accessToken, 25))
         );
-
-        // Fallback track search
-        const fallbackTracks = await searchTracks(query, accessToken);
-
-        allTracks = dedup([...playlistTrackSets.flat(), ...fallbackTracks]);
+        const fallback = await searchTracks(query, accessToken, 10);
+        allTracks = dedup([...playlistTracks.flat(), ...fallback]);
       }
     }
 
@@ -318,27 +280,19 @@ export async function POST(request: NextRequest) {
       return { ...t, tempo: f?.tempo, energy: f?.energy, danceability: f?.danceability, key: f?.key, mode: f?.mode };
     });
 
-    // ── Filter DJ friendly ────────────────────────────────────────────────────
-    enriched = enriched.filter((t: any) =>
-      t.energy === undefined || (t.energy >= 0.4 && t.danceability >= 0.4)
-    );
+    // ── LOOSE filter — only remove truly unlistenable tracks ─────────────────
+    // No energy/danceability filter — let everything through, just score it
+    // Only remove tracks with no artist or id
+    enriched = enriched.filter((t: any) => t?.id && t?.artists?.length > 0);
 
-    // ── Energy filter within 25% of seed ─────────────────────────────────────
-    if (seedFeatures.energy !== undefined) {
-      const e = seedFeatures.energy;
-      const filtered = enriched.filter((t: any) =>
-        t.energy === undefined || Math.abs(t.energy - e) <= 0.25
-      );
-      if (filtered.length >= 15) enriched = filtered;
-    }
-
-    // ── BPM filter ────────────────────────────────────────────────────────────
+    // ── BPM filter (only for explicit BPM queries) ────────────────────────────
     if (isBPMQuery(query) && seedFeatures.tempo) {
       const bpm = seedFeatures.tempo;
-      enriched = enriched.filter((t: any) => {
-        if (!t.tempo) return true; // keep if no tempo data
-        return [t.tempo, t.tempo * 2, t.tempo / 2].some((c: number) => Math.abs(c - bpm) <= 15);
+      const bpmFiltered = enriched.filter((t: any) => {
+        if (!t.tempo) return true;
+        return [t.tempo, t.tempo * 2, t.tempo / 2].some((c: number) => Math.abs(c - bpm) <= 20);
       });
+      if (bpmFiltered.length >= 10) enriched = bpmFiltered;
     }
 
     // ── Score every track ─────────────────────────────────────────────────────
@@ -347,7 +301,6 @@ export async function POST(request: NextRequest) {
       return { ...t, matchScore: score, badge };
     });
 
-    // ── Sort by score ─────────────────────────────────────────────────────────
     enriched.sort((a: any, b: any) => b.matchScore - a.matchScore);
 
     // ── 70/30 popular/gems ────────────────────────────────────────────────────
@@ -360,35 +313,36 @@ export async function POST(request: NextRequest) {
       combined = [...combined, ...enriched.filter((t: any) => !usedIds.has(t.id))].slice(0, 20);
     }
 
-// ── Max 1 track per artist, but relax if not enough tracks ───────────────
-    const artistSeen = new Map<string, number>();
-    const maxPerArtist = enriched.length < 30 ? 3 : combined.length < 15 ? 2 : 1;
-    let diversified = combined.filter((t: any) => {
-      const a = t.artists[0]?.name;
-      const n = artistSeen.get(a) || 0;
-      if (n >= maxPerArtist) return false;
-      artistSeen.set(a, n + 1);
-      return true;
-    });
+    // ── Artist diversity — progressive relaxation ─────────────────────────────
+    // Start with max 1 per artist, relax to 2, then 3 until we have 20
+    let diversified: any[] = [];
+    for (const maxPerArtist of [1, 2, 3, 99]) {
+      const artistCount = new Map<string, number>();
+      diversified = combined.filter((t: any) => {
+        const a = t.artists[0]?.name;
+        const n = artistCount.get(a) || 0;
+        if (n >= maxPerArtist) return false;
+        artistCount.set(a, n + 1);
+        return true;
+      });
 
-    // Pad back to 20, relaxing artist constraint each pass if needed
-    for (const limit of [2, 3, 99]) {
-      if (diversified.length >= 20) break;
-      const usedIds = new Set(diversified.map((t: any) => t.id));
-      const artistCount2 = new Map<string, number>();
-      diversified.forEach((t: any) => {
-        const a = t.artists[0]?.name;
-        artistCount2.set(a, (artistCount2.get(a) || 0) + 1);
-      });
-      const extras = enriched.filter((t: any) => {
-        if (usedIds.has(t.id)) return false;
-        const a = t.artists[0]?.name;
-        return (artistCount2.get(a) || 0) < limit;
-      });
-      diversified = [...diversified, ...extras].slice(0, 20);
+      // Also try to pad from enriched pool
+      if (diversified.length < 20) {
+        const usedIds = new Set(diversified.map((t: any) => t.id));
+        const artistCount2 = new Map<string, number>();
+        diversified.forEach((t: any) => artistCount2.set(t.artists[0]?.name, (artistCount2.get(t.artists[0]?.name) || 0) + 1));
+        const extras = enriched.filter((t: any) => {
+          if (usedIds.has(t.id)) return false;
+          const a = t.artists[0]?.name;
+          return (artistCount2.get(a) || 0) < maxPerArtist;
+        });
+        diversified = [...diversified, ...extras].slice(0, 20);
+      }
+
+      if (diversified.length >= 15) break; // good enough
     }
 
-    // ── Final sort by BPM for natural mix flow ────────────────────────────────
+    // ── Final sort by BPM for mix flow ───────────────────────────────────────
     const finalTracks = diversified
       .slice(0, 20)
       .map((t: any) => ({ ...t, isHiddenGem: t.popularity < 40 }))
