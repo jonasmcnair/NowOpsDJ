@@ -213,6 +213,11 @@ export default function HomePage() {
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--red)', background: 'var(--red-glow)', border: '1px solid var(--red-dim)', padding: '2px 6px', borderRadius: 2, letterSpacing: '0.1em' }}>
               BETA
             </span>
+            <a href="/dub-machine" style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-muted)', textDecoration: 'none', letterSpacing: '0.08em', padding: '2px 8px', border: '1px solid var(--border)', borderRadius: 2 }}
+              onMouseEnter={e => (e.currentTarget.style.color = 'var(--red)')}
+              onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}>
+              DUB MACHINE
+            </a>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
             {session?.user && (
