@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Background -->
+  <rect width="32" height="32" rx="6" fill="#111111"/>
+  
+  <!-- Crossfader track -->
+  <rect x="4" y="14" width="24" height="4" rx="2" fill="#2a2a2a"/>
+  
+  <!-- Red accent line on track -->
+  <rect x="4" y="15.5" width="24" height="1" rx="0.5" fill="#e63312" opacity="0.6"/>
+  
+  <!-- Fader knob (positioned left of center) -->
+  <rect x="9" y="10" width="7" height="12" rx="2" fill="#333333" stroke="#e63312" stroke-width="1"/>
+  
+  <!-- Knob center line -->
+  <rect x="10" y="15.5" width="5" height="1" rx="0.5" fill="#e63312"/>
+  
+  <!-- Left dot indicator -->
+  <circle cx="6" cy="16" r="1.5" fill="#e63312"/>
+  
+  <!-- Right dot indicator (dim) -->
+  <circle cx="26" cy="16" r="1.5" fill="#2a2a2a" stroke="#444" stroke-width="0.5"/>
+</svg>
