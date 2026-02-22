@@ -251,7 +251,17 @@ export default function HomePage() {
                       </div>
                     </div>
                     <p className="hidden sm:block text-xs text-charcoal-muted truncate pr-4">{track.album?.name}</p>
-                    <div className="flex items-center gap-1.5 justify-end flex-shrink-0">
+                    <div className="flex items-center gap-1.5 justify-end flex-shrink-0 flex-wrap">
+                      {(track as any).badge && (track as any).badge !== 'Discovered' && (
+                        <span className={`tag ${
+                          (track as any).badge === 'Perfect Mashup' ? 'bg-amber-100 text-amber-700' :
+                          (track as any).badge === 'Floor Filler' ? 'bg-green-100 text-green-700' :
+                          (track as any).badge === 'Hidden Gem' ? 'bg-purple-100 text-purple-700' :
+                          ''
+                        }`}>
+                          {(track as any).badge}
+                        </span>
+                      )}
                       {track.tempo && <span className="tag">{Math.round(track.tempo)} BPM</span>}
                       {camelotKey && <span className="tag">{camelotKey}</span>}
                     </div>
